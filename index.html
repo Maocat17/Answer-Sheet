@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>極簡答案卡</title>
+<style>
+  :root{--bg:#f7f7f9;--card:#fff;--muted:#6b7280;--accent:#111827}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans TC',Arial; background:var(--bg); color:var(--accent); margin:24px}
+  .wrap{max-width:760px;margin:0 auto}
+  header {
+    display:flex;
+    flex-wrap: wrap;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+    gap:12px;
+  }
+  h1{font-size:18px;margin:0;flex: 1 1 100%;}
+  .controls, .multi-select-container {
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .controls input[type=number]{
+    width:84px;
+    padding:6px;
+    border-radius:6px;
+    border:1px solid #e6e7ea;
+    background:white;
+  }
+  .controls button, .multi-select-container label {
+    cursor:pointer;
+    user-select:none;
+  }
+  .controls button{
+    padding:8px 12px;
+    border-radius:8px;
+    border:0;
+    background:#111827;
+    color:#fff;
+  }
+  .multi-select-container label {
+    font-weight: 600;
+  }
+  #quickJump {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    user-select:none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+    border-bottom: 1px solid #e6e7ea;
+    padding-bottom: 4px;
+  }
+  #quickJump::-webkit-scrollbar {
+    height: 8px;
+  }
+  #quickJump::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  #quickJump button {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #e6e7ea;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  #quickJump button:hover {
+    background: #111827;
+    color: white;
+    border-color: #111827;
+  }
+  #quickJump button.active {
+    background: #111827;
+    color: white;
+    border-color: #111827;
+    pointer-events: none;
+  }
+  #quickJump button.answered {
+    background: #e0e0e0;
+    color: #888888;
+    border-color: #ccc;
+  }
+  .card{
+    background:var(--card);
+    border-radius:10px;
+    padding:12px;
+    box-shadow:0 6px 18px rgba(15,23,42,0.06);
+    max-height: 68vh;
+    overflow-y: auto;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:60px 1fr 1fr 120px;
+    gap:8px;
+    align-items:center;
+    padding:6px 0;
+    border-bottom:1px dashed #efefef;
+    transition: background-color 0.2s ease;
+  }
+  .grid.group-separator {
+    border-bottom: 3px solid #cbd5e1;
+    margin-bottom: 12px;
+  }
+  .grid:last-child {
+    border-bottom: 1px dashed #efefef;
+    margin-bottom: 0;
+  }
+  .num{
+    font-weight:600;
+    text-align:center;
+    color:var(--muted);
+  }
+  .options{
+    display:flex;
+    gap:6px;
+  }
+  .option-btn{
+    padding:4px 10px;
+    border:1px solid #e6e7ea;
+    border-radius:6px;
+    background:#fff;
+    cursor:pointer;
+    transition:all .15s;
+    user-select:none;
+  }
+  .option-btn.selected{
+    background:#111827;
+    color:#fff;
+    border-color:#111827;
+  }
+  input.memo{
+    width:100%;
+    padding:4px 8px;
+    border:1px solid #e6e7ea;
+    border-radius:6px;
+    font-size:14px;
+    transition: opacity 0.3s ease;
+  }
+  .memo-hidden {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    pointer-events: none;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+  }
+  .note{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+  }
+  .toolbar{
+    display:flex;
+    gap:8px;
+    flex-wrap: wrap;
+    justify-content:flex-end;
+    margin-top:10px;
+    position:relative;
+  }
+  .toolbar button{
+    padding:8px 12px;
+    border-radius:8px;
+    border:1px solid #e6e7ea;
+    background:white;
+    cursor:pointer;
+  }
+  .toolbar .primary{
+    background:#111827;
+    color:#fff;
+    border-color:transparent;
+  }
+  .small{
+    font-size:13px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #e6e7ea;
+    background: white;
+    cursor: pointer;
+  }
+  /* highlight 背景色 */
+  .grid.highlight {
+    background-color: #fff9c4;
+  }
+  #importTextArea {
+    width: 100%;
+    height: 120px;
+    margin-top: 6px;
+    font-family: monospace;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #e6e7ea;
+    padding: 6px 8px;
+    resize: vertical;
+    display: none;
+  }
+  #importTextArea.show {
+    display: block;
+  }
+  /* popup menu */
+  .import-menu {
+    position: absolute;
+    right: 0;
+    bottom: 38px;  /* 改成靠按鈕上方 */
+    background: white;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    display: none;
+    z-index: 10;
+    width: 160px;
+  }
+  .import-menu.show {
+    display: block;
+  }
+  .import-menu button {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #e6e7ea;
+  }
+  .import-menu button:last-child {
+    border-bottom: none;
+  }
+  .import-menu button:hover {
+    background: #f3f4f6;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>極簡答案卡</h1>
+      <div class="controls">
+        <label for="count">題數</label>
+        <input id="count" type="number" min="1" max="500" value="10" />
+        <button id="regen">產生</button>
+      </div>
+      <div class="multi-select-container">
+        <label><input type="checkbox" id="multiMode" /> 多選模式</label>
+      </div>
+      <div class="multi-select-container">
+        <label><input type="checkbox" id="showMemo" checked /> 備註欄顯示</label>
+      </div>
+    </header>
+    <div id="quickJump" aria-label="快速切換題號區" role="group"></div>
+    <div class="card" id="card" tabindex="0"></div>
+    <div class="toolbar" style="position: relative;">
+      <button id="clearBtn" class="small">清除答案</button>
+      <button id="exportBtn" class="primary small">匯出 TXT</button>
+      <button id="copyBtn" class="small">複製答案到剪貼簿</button>
+      <button id="importToggleBtn" class="small">匯入 ▼</button>
+      <div class="import-menu" id="importMenu" role="menu" aria-label="匯入選單">
+        <button id="importFileBtn" type="button" role="menuitem">從檔案匯入</button>
+        <button id="importTextBtn" type="button" role="menuitem">貼上匯入文字區</button>
+      </div>
+    </div>
+    <textarea id="importTextArea" placeholder="請將答案貼在此處，格式：1: A" aria-label="匯入文字區"></textarea>
+    <div style="text-align:right; margin-top:4px;">
+      <button id="importTextConfirmBtn" type="button" class="small" style="display:none;">匯入文字</button>
+    </div>
+    <p class="note">
+      可直接點選 A～E 選項，或匯入/匯出 TXT。格式為 <code>1: A</code>，多選答案請用無空格連續字母（例如 <code>AC</code>）。空白會輸出 <code>-</code>。
+    </p>
+    <input id="fileIn" type="file" accept=".txt" style="display:none" />
+  </div>
+
+<script>
+  const card = document.getElementById("card");
+  const countInput = document.getElementById("count");
+  const regenBtn = document.getElementById("regen");
+  const exportBtn = document.getElementById("exportBtn");
+  const importToggleBtn = document.getElementById("importToggleBtn");
+  const importMenu = document.getElementById("importMenu");
+  const importFileBtn = document.getElementById("importFileBtn");
+  const importTextBtn = document.getElementById("importTextBtn");
+  const fileIn = document.getElementById("fileIn");
+  const clearBtn = document.getElementById("clearBtn");
+  const multiModeCheckbox = document.getElementById("multiMode");
+  const quickJump = document.getElementById("quickJump");
+  const showMemoCheckbox = document.getElementById("showMemo");
+  const copyBtn = document.getElementById("copyBtn");
+  const importTextArea = document.getElementById("importTextArea");
+  const importTextConfirmBtn = document.getElementById("importTextConfirmBtn");
+
+  function makeRow(i, selected = "", memo = "") {
+    const row = document.createElement("div");
+    row.className = "grid";
+    if (i % 5 === 0) row.classList.add("group-separator");
+    row.id = `q${i}`;
+    row.innerHTML = `
+      <div class="num">${i}</div>
+      <div class="options">
+        ${["A", "B", "C", "D", "E"]
+          .map(
+            (opt) =>
+              `<button class='option-btn' data-val='${opt}' aria-label='第${i}題答案 ${opt}'>${opt}</button>`
+          )
+          .join("")}
+      </div>
+      <div>
+        <input type="text" class="memo" placeholder="備註（選填）" maxlength="50" aria-label="第${i}題備註" />
+      </div>
+    `;
+    if (selected) {
+      const btns = row.querySelectorAll(".option-btn");
+      const selectedSet = new Set(selected.split(""));
+      btns.forEach((btn) => {
+        btn.classList.toggle(
+          "selected",
+          selectedSet.has(btn.dataset.val.toUpperCase())
+        );
+      });
+    }
+    row.querySelector(".memo").value = memo;
+    toggleMemoVisibility(row);
+    return row;
+  }
+  function toggleMemoVisibility(row) {
+    const showMemo = showMemoCheckbox.checked;
+    const memoInput = row.querySelector(".memo");
+    if (showMemo) {
+      memoInput.classList.remove("memo-hidden");
+    } else {
+      memoInput.classList.add("memo-hidden");
+    }
+  }
+  function updateAllMemoVisibility() {
+    const rows = card.querySelectorAll(".grid");
+    rows.forEach(toggleMemoVisibility);
+  }
+  function render(n) {
+    const oldRows = Array.from(card.querySelectorAll(".grid"));
+    const oldAnswers = oldRows.map((row) => {
+      const btns = row.querySelectorAll(".option-btn.selected");
+      return [...btns].map((b) => b.dataset.val).join("");
+    });
+    const oldMemos = oldRows.map((row) => row.querySelector(".memo").value);
+
+    card.innerHTML = "";
+    for (let i = 1; i <= n; i++) {
+      const ans = oldAnswers[i - 1] || "";
+      const memo = oldMemos[i - 1] || "";
+      card.appendChild(makeRow(i, ans, memo));
+    }
+    renderQuickJumpButtons(n);
+  }
+  function updateSelection(row, val) {
+    const multi = multiModeCheckbox.checked;
+    const btns = row.querySelectorAll(".option-btn");
+    if (multi) {
+      btns.forEach((btn) => {
+        if (btn.dataset.val === val) {
+          btn.classList.toggle("selected");
+        }
+      });
+    } else {
+      const targetBtn = [...btns].find((b) => b.dataset.val === val);
+      const isSelected = targetBtn.classList.contains("selected");
+      btns.forEach((btn) => btn.classList.remove("selected"));
+      if (!isSelected) targetBtn.classList.add("selected");
+    }
+    updateQuickJumpStatus();
+  }
+  function renderQuickJumpButtons(n) {
+    quickJump.innerHTML = "";
+    for (let i = 1; i <= n; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = i;
+      btn.type = "button";
+      btn.setAttribute("aria-label", `快速跳轉到第${i}題`);
+      btn.addEventListener("click", () => {
+        const target = document.getElementById(`q${i}`);
+        if (target) {
+          const cardRect = card.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const scrollTop =
+            card.scrollTop + targetRect.top - cardRect.top - card.clientHeight / 2 + target.clientHeight / 2;
+          card.scrollTo({ top: scrollTop, behavior: "smooth" });
+
+          setTimeout(() => {
+            target.classList.add("highlight");
+            setTimeout(() => {
+              target.classList.remove("highlight");
+            }, 400);
+          }, 300);
+        }
+      });
+      quickJump.appendChild(btn);
+    }
+    updateQuickJumpStatus();
+    updateQuickJumpActive(null);
+  }
+  function updateQuickJumpStatus() {
+    const rows = card.querySelectorAll(".grid");
+    const buttons = quickJump.querySelectorAll("button");
+    rows.forEach((row, idx) => {
+      const btns = row.querySelectorAll(".option-btn.selected");
+      const hasAnswer = btns.length > 0;
+      const btn = buttons[idx];
+      if (btn) {
+        if (hasAnswer) {
+          btn.classList.add("answered");
+          btn.style.pointerEvents = "auto";
+        } else {
+          btn.classList.remove("answered");
+          btn.style.pointerEvents = "auto";
+          btn.style.backgroundColor = "";
+          btn.style.color = "";
+          btn.style.borderColor = "";
+        }
+      }
+    });
+  }
+  function updateQuickJumpActive(selectedNum) {
+    const buttons = quickJump.querySelectorAll("button");
+    buttons.forEach((btn) => {
+      btn.classList.toggle(
+        "active",
+        Number(btn.textContent) === selectedNum && !btn.classList.contains("answered")
+      );
+    });
+  }
+  regenBtn.addEventListener("click", () => {
+    const n = Math.max(1, Math.min(500, parseInt(countInput.value) || 10));
+    countInput.value = n;
+    render(n);
+    updateAllMemoVisibility();
+  });
+  card.addEventListener("click", (e) => {
+    if (e.target.classList.contains("option-btn")) {
+      const btn = e.target;
+      const row = btn.closest(".grid");
+      updateSelection(row, btn.dataset.val);
+    }
+  });
+  exportBtn.addEventListener("click", () => {
+    const rows = Array.from(card.querySelectorAll(".grid"));
+    const lines = rows.map((r, idx) => {
+      const btns = r.querySelectorAll(".option-btn.selected");
+      const ans =
+        btns.length === 0
+          ? "-"
+          : [...btns]
+              .map((b) => b.dataset.val)
+              .sort()
+              .join("");
+      return `${idx + 1}: ${ans}`;
+    });
+    const blob = new Blob([lines.join("\n")], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "answers.txt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+  clearBtn.addEventListener("click", () => {
+    card.querySelectorAll(".option-btn").forEach((i) =>
+      i.classList.remove("selected")
+    );
+    card.querySelectorAll(".memo").forEach((i) => (i.value = ""));
+    updateAllMemoVisibility();
+    updateQuickJumpStatus();
+    updateQuickJumpActive(null);
+  });
+  countInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") regenBtn.click();
+  });
+  showMemoCheckbox.addEventListener("change", () => {
+    updateAllMemoVisibility();
+  });
+  copyBtn.addEventListener("click", async () => {
+    const rows = Array.from(card.querySelectorAll(".grid"));
+    const lines = rows.map((r, idx) => {
+      const btns = r.querySelectorAll(".option-btn.selected");
+      const ans =
+        btns.length === 0
+          ? "-"
+          : [...btns]
+              .map((b) => b.dataset.val)
+              .sort()
+              .join("");
+      return `${idx + 1}: ${ans}`;
+    });
+    const text = lines.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("答案已複製到剪貼簿！");
+    } catch {
+      alert("複製失敗，請手動複製！");
+    }
+  });
+
+  // 匯入選單切換
+  importToggleBtn.addEventListener("click", (e) => {
+    importMenu.classList.toggle("show");
+  });
+  // 點擊其他區域關閉選單
+  document.addEventListener("click", (e) => {
+    if (
+      !importToggleBtn.contains(e.target) &&
+      !importMenu.contains(e.target)
+    ) {
+      importMenu.classList.remove("show");
+    }
+  });
+  // 從檔案匯入
+  importFileBtn.addEventListener("click", () => {
+    fileIn.click();
+    importMenu.classList.remove("show");
+  });
+  fileIn.addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const text = await f.text();
+    processImportText(text);
+    fileIn.value = "";
+    importMenu.classList.remove("show");
+  });
+  // 貼上匯入文字區切換
+  importTextBtn.addEventListener("click", () => {
+    const isShown = importTextArea.classList.toggle("show");
+    importTextConfirmBtn.style.display = isShown ? "inline-block" : "none";
+    importMenu.classList.remove("show");
+    if (isShown) importTextArea.focus();
+  });
+  // 貼上匯入確認
+  importTextConfirmBtn.addEventListener("click", () => {
+    const text = importTextArea.value.trim();
+    if (!text) {
+      alert("請先貼入答案文字");
+      return;
+    }
+    processImportText(text);
+    importTextArea.value = "";
+    importTextArea.classList.remove("show");
+    importTextConfirmBtn.style.display = "none";
+  });
+
+  function processImportText(text) {
+    const lines = text
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const pairs = {};
+    for (const line of lines) {
+      const m = line.match(/^(\d+)\s*[:：]\s*(.*)$/);
+      if (m) {
+        pairs[parseInt(m[1], 10)] = m[2]
+          .toUpperCase()
+          .replace(/[^A-E]/g, "");
+      }
+    }
+    const maxIndex = Math.max(
+      ...Object.keys(pairs).map(Number),
+      parseInt(countInput.value) || 0
+    );
+    countInput.value = Math.max(1, maxIndex);
+    render(parseInt(countInput.value, 10));
+    for (const [k, v] of Object.entries(pairs)) {
+      const idx = parseInt(k, 10) - 1;
+      const row = card.querySelectorAll(".grid")[idx];
+      if (row) {
+        const btns = row.querySelectorAll(".option-btn");
+        btns.forEach((btn) => {
+          btn.classList.toggle("selected", v.includes(btn.dataset.val));
+        });
+      }
+    }
+    updateAllMemoVisibility();
+    updateQuickJumpStatus();
+  }
+
+  render(parseInt(countInput.value, 10) || 10);
+</script>
+</body>
+</html>
